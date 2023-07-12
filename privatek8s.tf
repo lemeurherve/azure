@@ -227,6 +227,10 @@ output "privatek8s_public_ip_address" {
   value = azurerm_public_ip.public_privatek8s.ip_address
 }
 
+output "privatek8s_effective_outbound_ips_ids" {
+  value       = azurerm_kubernetes_cluster.privatek8s.network_profile[0].load_balancer_profile[0].effective_outbound_ips
+}
+
 output "privatek8s_kube_config_command" {
   value = "az aks get-credentials --name ${azurerm_kubernetes_cluster.privatek8s.name} --resource-group ${azurerm_kubernetes_cluster.privatek8s.resource_group_name}"
 }

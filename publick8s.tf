@@ -242,6 +242,10 @@ output "ldap_jenkins_io_ipv4_address" {
   value = azurerm_public_ip.ldap_jenkins_io_ipv4.ip_address
 }
 
+output "publick8s_effective_outbound_ips_ids" {
+  value       = azurerm_kubernetes_cluster.publick8s.network_profile[0].load_balancer_profile[0].effective_outbound_ips
+}
+
 output "publick8s_kube_config_command" {
   value = "az aks get-credentials --name ${azurerm_kubernetes_cluster.publick8s.name} --resource-group ${azurerm_kubernetes_cluster.publick8s.resource_group_name}"
 }
