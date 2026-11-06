@@ -247,10 +247,27 @@ resource "azurerm_role_assignment" "certpush_to_acr" {
 ########################################################################################
 # Used for storing artifact caches (Maven, Grapes, etc.) close to the agents
 ########################################################################################
-resource "azurerm_storage_account" "cert_ci_jenkins_io_sponsored" {
+moved {
+  from = azurerm_storage_account.cert_ci_jenkins_io_sponsored
+  to   = azurerm_storage_account.cert_ci_jenkins_io_cache
+}
+moved {
+  from = azurerm_storage_share.cache_cert_ci_jenkins_io_sponsored
+  to   = azurerm_storage_share.cert_ci_jenkins_io_cache
+}
+moved {
+  from = azurerm_role_assignment.cert_ci_jenkins_io_azurevm_agents_jenkins_sponsored_write_cache_share
+  to   = azurerm_role_assignment.cert_ci_jenkins_io_azurevm_agents_jenkins_sponsored_cache_fileshare_writer
+}
+moved {
+  from = module.infraci_certcijenkinsio_fileshare_serviceprincipal_writer
+  to   = module.infraci_certcijenkinsiocache_fileshare_serviceprincipal_writer
+}
+
+resource "azurerm_storage_account" "cert_ci_jenkins_io_cache" {
   provider = azurerm.jenkins-sponsored
 
-  name                       = "certcijenkinsiosponsored"
+  name                       = "certcijenkinsioscache"
   resource_group_name        = azurerm_resource_group.cert_ci_jenkins_io_sponsored_commons.name
   location                   = data.azurerm_virtual_network.cert_ci_jenkins_io_sponsored.location # CLose the the agents (may be different than the RG)
   account_tier               = "Standard"
@@ -283,28 +300,28 @@ resource "azurerm_storage_account" "cert_ci_jenkins_io_sponsored" {
     scope = "terraform-managed"
   }
 }
-resource "azurerm_storage_share" "cache_cert_ci_jenkins_io_sponsored" {
+resource "azurerm_storage_share" "cert_ci_jenkins_io_cache" {
   provider = azurerm.jenkins-sponsored
 
-  name               = "cache-cert-ci-jenkins-io"
-  storage_account_id = azurerm_storage_account.cert_ci_jenkins_io_sponsored.id
+  name               = "cert-ci-jenkins-io-cache"
+  storage_account_id = azurerm_storage_account.cert_ci_jenkins_io_cache.id
   quota              = 10
 }
-resource "azurerm_role_assignment" "cert_ci_jenkins_io_azurevm_agents_jenkins_sponsored_write_cache_share" {
+resource "azurerm_role_assignment" "cert_ci_jenkins_io_azurevm_agents_jenkins_sponsored_cache_fileshare_writer" {
   provider = azurerm.jenkins-sponsored
 
-  scope = azurerm_storage_account.cert_ci_jenkins_io_sponsored.id
+  scope = azurerm_storage_account.cert_ci_jenkins_io_cache.id
   # Allow writing
   role_definition_name = "Storage File Data Privileged Contributor"
   principal_id         = azurerm_user_assigned_identity.cert_ci_jenkins_io_azurevm_agents_jenkins_sponsored.principal_id
 }
-module "infraci_certcijenkinsio_fileshare_serviceprincipal_writer" {
+module "infraci_certcijenkinsiocache_fileshare_serviceprincipal_writer" {
   source                     = "./modules/azure-jenkinsinfra-fileshare-serviceprincipal-writer"
-  service_fqdn               = "infra-ci-jenkins-io-fileshare_serviceprincipal_writer"
+  service_fqdn               = "infra-ci-certcijenkinsio-cache-fileshare-serviceprincipal-writer"
   active_directory_owners    = [data.azuread_service_principal.terraform_production.object_id]
   active_directory_url       = "https://github.com/jenkins-infra/azure"
-  service_principal_end_date = local.end_dates.infra_ci_jenkins_io.infraci_certcijenkinsio_fileshare_serviceprincipal_writer.end_date
-  file_share_id              = azurerm_storage_share.cache_cert_ci_jenkins_io_sponsored.id
-  storage_account_id         = azurerm_storage_account.cert_ci_jenkins_io_sponsored.id
+  service_principal_end_date = local.end_dates.infra_ci_jenkins_io.infraci_certcijenkinsiocache_fileshare_serviceprincipal_writer.end_date
+  file_share_id              = azurerm_storage_share.cert_ci_jenkins_io_cache.id
+  storage_account_id         = azurerm_storage_account.cert_ci_jenkins_io_cache.id
   default_tags               = local.default_tags
 }
